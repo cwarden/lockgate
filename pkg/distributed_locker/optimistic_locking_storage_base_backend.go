@@ -194,11 +194,15 @@ func (backend *OptimisticLockingStorageBasedBackend) Release(handle lockgate.Loc
 			delete(currentLease.QueueMembers, key)
 		}
 
-		if currentLease.SharedHoldersCount == 0 && len(currentLease.QueueMembers) == 0 {
-			unsetLockLeaseFromStoreValue(value)
-		} else {
-			setLockLeaseIntoStoreValue(currentLease, value)
+		if currentLease.SharedHoldersCount == 0 {
+			if len(currentLease.QueueMembers) == 0 {
+				unsetLockLeaseFromStoreValue(value)
+				return nil
+			}
+			// Expire the lease so the waiting QueueMembers can acquire it
+			currentLease.ExpireAtTimestamp = time.Now().Add(-1 * time.Second).Unix()
 		}
+		setLockLeaseIntoStoreValue(currentLease, value)
 
 		return nil
 	})
