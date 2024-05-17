@@ -143,6 +143,9 @@ func (backend *OptimisticLockingStorageBasedBackend) TakeIfOldest(handle lockgat
 		if nextUp.AcquirerId == "" || nextUp.AcquirerId == acquirerId {
 			// Generate a new UUID for the new acquirer
 			currentLease.UUID = uuid.New().String()
+			currentLease.ExpireAtTimestamp = time.Now().Unix() + DistributedLockLeaseTTLSeconds
+			currentLease.SharedHoldersCount = 1
+			delete(currentLease.QueueMembers, acquirerId)
 			newLease = currentLease
 		}
 		setLockLeaseIntoStoreValue(currentLease, value)
