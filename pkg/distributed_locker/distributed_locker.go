@@ -110,11 +110,19 @@ func (l *DistributedLocker) Release(handle lockgate.LockHandle) error {
 	return l.release(handle)
 }
 
+func (l *DistributedLocker) ReleaseBackend(handle lockgate.LockHandle) error {
+	debug("(release lock %q) %#v", handle.LockName, handle)
+	return l.releaseBackend(handle)
+}
+
 func (l *DistributedLocker) release(handle lockgate.LockHandle) error {
 	if err := l.stopLeaseRenewWorker(handle); err != nil {
 		return err
 	}
+	return l.releaseBackend(handle)
+}
 
+func (l *DistributedLocker) releaseBackend(handle lockgate.LockHandle) error {
 	if err := l.Backend.Release(handle); IsErrLockAlreadyLeased(err) || IsErrNoExistingLockLeaseFound(err) {
 		// TODO: maybe should call OnLostLease handler func
 		// TODO: which should be saved
